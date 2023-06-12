@@ -1,5 +1,7 @@
 package io.github.geancarloslc.avaliadorcredito.controller;
 
+import io.github.geancarloslc.avaliadorcredito.domain.exception.ErroComunicacaoMicroservicesException;
+import io.github.geancarloslc.avaliadorcredito.domain.exception.HttpStatusNotFoundException;
 import io.github.geancarloslc.avaliadorcredito.domain.model.SituacaoCliente;
 import io.github.geancarloslc.avaliadorcredito.service.AvaliadorCreditoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +24,14 @@ public class AvaliadorCreditoController {
     }
 
     @GetMapping(value = "situacao-cliente", params = "cpf")
-    public ResponseEntity<SituacaoCliente> consultarSituacaoCliente(@RequestParam("cpf") String cpf) {
-        SituacaoCliente situacaoCliente = avaliadorCreditoService.obterSituacaoCliente(cpf);
-        return ResponseEntity.ok(situacaoCliente);
+    public ResponseEntity<Object> consultarSituacaoCliente(@RequestParam("cpf") String cpf) {
+        try {
+            SituacaoCliente situacaoCliente = avaliadorCreditoService.obterSituacaoCliente(cpf);
+            return ResponseEntity.ok(situacaoCliente);
+        } catch (HttpStatusNotFoundException ex) {
+            return ResponseEntity.notFound().build();
+        } catch (ErroComunicacaoMicroservicesException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+        }
     }
 }
