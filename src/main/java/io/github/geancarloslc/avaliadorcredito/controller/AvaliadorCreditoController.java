@@ -2,14 +2,13 @@ package io.github.geancarloslc.avaliadorcredito.controller;
 
 import io.github.geancarloslc.avaliadorcredito.domain.exception.ErroComunicacaoMicroservicesException;
 import io.github.geancarloslc.avaliadorcredito.domain.exception.HttpStatusNotFoundException;
+import io.github.geancarloslc.avaliadorcredito.domain.model.DadosAvaliacao;
 import io.github.geancarloslc.avaliadorcredito.domain.model.SituacaoCliente;
+import io.github.geancarloslc.avaliadorcredito.infra.dto.DadosAvaliacaoDTO;
 import io.github.geancarloslc.avaliadorcredito.service.AvaliadorCreditoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("avaliacoes-credito")
@@ -28,6 +27,18 @@ public class AvaliadorCreditoController {
         try {
             SituacaoCliente situacaoCliente = avaliadorCreditoService.obterSituacaoCliente(cpf);
             return ResponseEntity.ok(situacaoCliente);
+        } catch (HttpStatusNotFoundException ex) {
+            return ResponseEntity.notFound().build();
+        } catch (ErroComunicacaoMicroservicesException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+        }
+    }
+
+    @PostMapping()
+    public ResponseEntity realizarAvaliacao(@RequestBody DadosAvaliacao dadosAvaliacao) {
+        try {
+            DadosAvaliacaoDTO dadosAvaliacaoDTO = avaliadorCreditoService.realizarAvaliacao(dadosAvaliacao.getCpf(), dadosAvaliacao.getRenda());
+            return ResponseEntity.ok(dadosAvaliacaoDTO);
         } catch (HttpStatusNotFoundException ex) {
             return ResponseEntity.notFound().build();
         } catch (ErroComunicacaoMicroservicesException ex) {
