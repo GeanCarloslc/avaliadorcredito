@@ -1,10 +1,13 @@
 package io.github.geancarloslc.avaliadorcredito.controller;
 
 import io.github.geancarloslc.avaliadorcredito.domain.exception.ErroComunicacaoMicroservicesException;
+import io.github.geancarloslc.avaliadorcredito.domain.exception.ErroSolicitacaoCartaoException;
 import io.github.geancarloslc.avaliadorcredito.domain.exception.HttpStatusNotFoundException;
 import io.github.geancarloslc.avaliadorcredito.domain.model.DadosAvaliacao;
 import io.github.geancarloslc.avaliadorcredito.domain.model.SituacaoCliente;
 import io.github.geancarloslc.avaliadorcredito.infra.dto.DadosAvaliacaoDTO;
+import io.github.geancarloslc.avaliadorcredito.infra.dto.DadosSolicitacaoEmissaoCartaoDTO;
+import io.github.geancarloslc.avaliadorcredito.infra.mqueue.model.ProtocoloSolicitacaoCartao;
 import io.github.geancarloslc.avaliadorcredito.service.AvaliadorCreditoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +46,17 @@ public class AvaliadorCreditoController {
             return ResponseEntity.notFound().build();
         } catch (ErroComunicacaoMicroservicesException ex) {
             return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+        }
+    }
+
+    @PostMapping("solicitacoes-cartao")
+    public ResponseEntity solicitarCartao(@RequestBody DadosSolicitacaoEmissaoCartaoDTO dadosSolicitacaoEmissaoCartaoDTO) {
+        try {
+            ProtocoloSolicitacaoCartao protocoloSolicitacaoCartao
+                    = avaliadorCreditoService.solicitarEmissaoCartao(dadosSolicitacaoEmissaoCartaoDTO);
+            return ResponseEntity.ok(protocoloSolicitacaoCartao);
+        } catch (ErroSolicitacaoCartaoException ex) {
+            return ResponseEntity.internalServerError().body(ex.getMessage());
         }
     }
 }

@@ -2,16 +2,17 @@ package io.github.geancarloslc.avaliadorcredito.service;
 
 import feign.FeignException;
 import io.github.geancarloslc.avaliadorcredito.domain.exception.ErroComunicacaoMicroservicesException;
+import io.github.geancarloslc.avaliadorcredito.domain.exception.ErroSolicitacaoCartaoException;
 import io.github.geancarloslc.avaliadorcredito.domain.exception.HttpStatusNotFoundException;
 import io.github.geancarloslc.avaliadorcredito.domain.model.CartaoAprovado;
 import io.github.geancarloslc.avaliadorcredito.domain.model.DadosCliente;
 import io.github.geancarloslc.avaliadorcredito.domain.model.SituacaoCliente;
 import io.github.geancarloslc.avaliadorcredito.infra.client.CartoesControllerClient;
 import io.github.geancarloslc.avaliadorcredito.infra.client.ClienteControlerClient;
-import io.github.geancarloslc.avaliadorcredito.infra.dto.CartaoClienteDTO;
-import io.github.geancarloslc.avaliadorcredito.infra.dto.CartaoDTO;
-import io.github.geancarloslc.avaliadorcredito.infra.dto.ClienteDTO;
-import io.github.geancarloslc.avaliadorcredito.infra.dto.DadosAvaliacaoDTO;
+import io.github.geancarloslc.avaliadorcredito.infra.dto.*;
+import io.github.geancarloslc.avaliadorcredito.infra.mqueue.publisher.SolicitacaoEmissaoCartaoPublisher;
+import io.github.geancarloslc.avaliadorcredito.infra.dto.DadosSolicitacaoEmissaoCartaoDTO;
+import io.github.geancarloslc.avaliadorcredito.infra.mqueue.model.ProtocoloSolicitacaoCartao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,9 +29,10 @@ public class AvaliadorCreditoService {
 
     @Autowired
     private ClienteControlerClient clienteControlerClient;
-
     @Autowired
     private CartoesControllerClient cartoesControllerClient;
+    @Autowired
+    private SolicitacaoEmissaoCartaoPublisher solicitacaoEmissaoCartaoPublisher;
 
     public SituacaoCliente obterSituacaoCliente(String cpf)
             throws HttpStatusNotFoundException, ErroComunicacaoMicroservicesException {
@@ -90,6 +93,16 @@ public class AvaliadorCreditoService {
             } else {
                 throw new ErroComunicacaoMicroservicesException(ex.contentUTF8(), status);
             }
+        }
+    }
+
+    public ProtocoloSolicitacaoCartao solicitarEmissaoCartao(DadosSolicitacaoEmissaoCartaoDTO dadosSolicitacaoEmissaoCartao) {
+        try {
+            solicitacaoEmissaoCartaoPublisher.solicitarCartao(dadosSolicitacaoEmissaoCartao);
+            String protocolo = UUID.randomUUID().toString();
+            return new ProtocoloSolicitacaoCartao(protocolo);
+        } catch (Exception ex) {
+            throw new ErroSolicitacaoCartaoException(ex.getMessage());
         }
     }
 }
